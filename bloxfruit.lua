@@ -1,5 +1,5 @@
--- language: Luau, file: ps99_enterprise_ultimate_v4.lua, target: Roblox / Executor
--- *Pet Simulator 99 Space Forge - Enterprise Ultimate Hub with Cyberpunk UI, Rotating Logo, Live Stats & Draggable Buffs/Books Tracker*
+-- language: Luau, file: ps99_enterprise_ultimate_fixed.lua, target: Roblox / Executor
+-- *Pet Simulator 99 Space Forge - Enterprise Master Hub (Universal Fixed)*
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -7,11 +7,16 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
 local Stats = game:GetService("Stats")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Удаляем старые копии интерфейса если они были
+pcall(function()
+    if PlayerGui:FindFirstChild("PS99_MasterHub") then PlayerGui.PS99_MasterHub:Destroy() end
+    if PlayerGui:FindFirstChild("PS99_Loader") then PlayerGui.PS99_Loader:Destroy() end
+end)
 
 -- =========================================================================
 -- ЧАСТЬ 1: ПРЕМИАЛЬНЫЙ АНИМИРОВАННЫЙ ЛОАДЕР
@@ -20,7 +25,7 @@ local LoaderGui = Instance.new("ScreenGui")
 LoaderGui.Name = "PS99_Loader"
 LoaderGui.ResetOnSpawn = false
 LoaderGui.DisplayOrder = 999999
-LoaderGui.Parent = CoreGui
+LoaderGui.Parent = PlayerGui
 
 local CanvasGroup = Instance.new("CanvasGroup")
 CanvasGroup.Size = UDim2.new(0, 340, 0, 200)
@@ -94,10 +99,12 @@ local rotationConnection = RunService.RenderStepped:Connect(function(deltaTime)
 end)
 
 local function ChangeStatus(newText)
-    TweenService:Create(StatusText, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {TextTransparency = 1}):Play()
-    task.wait(0.2)
-    StatusText.Text = newText
-    TweenService:Create(StatusText, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
+    pcall(function()
+        TweenService:Create(StatusText, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {TextTransparency = 1}):Play()
+        task.wait(0.2)
+        StatusText.Text = newText
+        TweenService:Create(StatusText, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
+    end)
 end
 
 task.spawn(function()
@@ -143,7 +150,7 @@ task.spawn(function()
     MasterGui.DisplayOrder = 999999
     MasterGui.Parent = PlayerGui
 
-    -- 1. ВЕРХНЯЯ ВАТЕРМАРКА (Справа сверху: крутящийся логотип, ник, пинг, фпс)
+    -- 1. ВЕРХНЯЯ ВАТЕРМАРКА (Логотип, ник, пинг, фпс)
     local TopWatermark = Instance.new("Frame")
     TopWatermark.Size = UDim2.new(0, 280, 0, 36)
     TopWatermark.Position = UDim2.new(1, -295, 0, 15)
@@ -179,14 +186,16 @@ task.spawn(function()
     StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
     StatsLabel.Parent = TopWatermark
 
-    -- Поток вращения маленького логотипа и обновление пинга/фпс
     RunService.RenderStepped:Connect(function(dt)
         if MiniLogo and MiniLogo.Parent then
             MiniLogo.Rotation = (MiniLogo.Rotation + (120 * dt)) % 360
         end
         pcall(function()
             local fps = math.floor(1 / dt)
-            local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue() * 1000)
+            local ping = 0
+            pcall(function()
+                ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue() * 1000)
+            end)
             StatsLabel.Text = string.format("%s | %d FPS | %dms", LocalPlayer.Name, fps, ping)
         end)
     end)
@@ -605,5 +614,5 @@ task.spawn(function()
         end
     end)
 
-    print("[*] Enterprise Master Hub успешно инициализирован с ватермарками.")
+    print("[*] Enterprise Master Hub успешно инициализирован.")
 end)
