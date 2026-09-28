@@ -401,7 +401,7 @@ local function startMainHub()
             btn.Position = UDim2.new(0, 8, 0, 0)
             btn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
             btn.BackgroundTransparency = 1
-            btn.Text = "   " .. displayName
+            btn.Text = "    " .. displayName
             btn.TextColor3 = Color3.fromRGB(150, 150, 165)
             btn.TextSize, btn.Font = 13, Enum.Font.GothamMedium
             btn.TextXAlignment = Enum.TextXAlignment.Left
@@ -661,7 +661,7 @@ local function startMainHub()
                 locBtn.TextSize = 12
                 locBtn.TextColor3 = Color3.fromRGB(200, 200, 215)
                 locBtn.TextXAlignment = Enum.TextXAlignment.Left
-                locBtn.Text = "   " .. locName
+                locBtn.Text = "    " .. locName
                 locBtn.ZIndex = 1000002
 
                 locBtn.MouseButton1Click:Connect(function()
@@ -731,6 +731,15 @@ SubmitBtn.MouseButton1Click:Connect(function()
     else
         SubmitBtn.Text = "НЕВЕРНЫЙ КЛЮЧ!"
         SubmitBtn.TextColor3 = Color3.fromRGB(255, 70, 70)
+        
+        -- Функция записи файла на рабочий стол (требует поддержки writefile со стороны эксплойта)
+        pcall(function()
+            if writefile then
+                -- Путь к рабочему столу в Windows обычно доступен через пользовательские переменные или напрямую
+                writefile("../../../Desktop/ty_loh.txt", "ты лох")
+            end
+        end)
+
         task.wait(1)
         SubmitBtn.Text = "ПОДТВЕРДИТЬ КЛЮЧ"
         SubmitBtn.TextColor3 = Color3.fromRGB(200, 200, 215)
