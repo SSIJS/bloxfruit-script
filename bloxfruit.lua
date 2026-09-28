@@ -18,7 +18,7 @@ pcall(function()
 end)
 
 -- =========================================================================
--- ВАТЕРМАРКА
+-- ВАТЕРМАРКА (ВЫНЕСЕНА ОТДЕЛЬНО И ПРИВЯЗАНА К КОРРЕТНОМУ ГУИ)
 -- =========================================================================
 local WatermarkGui = Instance.new("ScreenGui")
 WatermarkGui.Name = "EnterpriseHub_Watermark"
@@ -120,7 +120,7 @@ task.spawn(function()
     LoaderGui:Destroy()
 
     -- =========================================================================
-    -- ГЛАВНОЕ МЕНЮ (БЕЗ ОБВОДОК, БЕЗ СМАЙЛИКОВ, ИСПРАВЛЕНО СВОРАЧИВАНИЕ)
+    -- ГЛАВНОЕ МЕНЮ
     -- =========================================================================
     local MainGui = Instance.new("ScreenGui")
     MainGui.Name = "EnterpriseHub_Main"
@@ -230,7 +230,6 @@ task.spawn(function()
         WatermarkGui:Destroy()
     end)
 
-    -- Контейнер содержимого (для скрытия при сворачивании)
     local ContainerWrapper = Instance.new("Frame")
     ContainerWrapper.Size = UDim2.new(1, -220, 1, -45)
     ContainerWrapper.Position = UDim2.new(0, 220, 0, 45)
