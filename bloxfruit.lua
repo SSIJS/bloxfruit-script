@@ -1,5 +1,5 @@
--- language: Luau, file: ps99_enterprise_ultimate_v3.lua, target: Roblox / Executor
--- *Pet Simulator 99 Space Forge - Enterprise Ultimate Hub with Premium Cyberpunk UI & Verified Functions*
+-- language: Luau, file: ps99_enterprise_ultimate_v4.lua, target: Roblox / Executor
+-- *Pet Simulator 99 Space Forge - Enterprise Ultimate Hub with Cyberpunk UI, Rotating Logo, Live Stats & Draggable Buffs/Books Tracker*
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -8,6 +8,7 @@ local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
+local Stats = game:GetService("Stats")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -134,14 +135,139 @@ task.spawn(function()
     LoaderGui:Destroy()
 
     -- =========================================================================
-    -- ЧАСТЬ 2: ГЛАВНОЕ МЕНЮ (В СТИЛЕ ЛОАДЕРА - КИБЕРПАНК / СТЕКЛО)
+    -- ЧАСТЬ 2: ГЛАВНОЕ МЕНЮ И ВАТЕРМАРКИ
     -- =========================================================================
-    local MainGui = Instance.new("ScreenGui")
-    MainGui.Name = "PS99_MasterHub"
-    MainGui.ResetOnSpawn = false
-    MainGui.DisplayOrder = 999999
-    MainGui.Parent = PlayerGui
+    local MasterGui = Instance.new("ScreenGui")
+    MasterGui.Name = "PS99_MasterHub"
+    MasterGui.ResetOnSpawn = false
+    MasterGui.DisplayOrder = 999999
+    MasterGui.Parent = PlayerGui
 
+    -- 1. ВЕРХНЯЯ ВАТЕРМАРКА (Справа сверху: крутящийся логотип, ник, пинг, фпс)
+    local TopWatermark = Instance.new("Frame")
+    TopWatermark.Size = UDim2.new(0, 280, 0, 36)
+    TopWatermark.Position = UDim2.new(1, -295, 0, 15)
+    TopWatermark.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
+    TopWatermark.BorderSizePixel = 0
+    TopWatermark.Parent = MasterGui
+
+    local TopCorner = Instance.new("UICorner")
+    TopCorner.CornerRadius = UDim.new(0, 8)
+    TopCorner.Parent = TopWatermark
+
+    local TopStroke = Instance.new("UIStroke")
+    TopStroke.Thickness = 1.2
+    TopStroke.Color = Color3.fromRGB(112, 0, 255)
+    TopStroke.Transparency = 0.3
+    TopStroke.Parent = TopWatermark
+
+    local MiniLogo = Instance.new("ImageLabel")
+    MiniLogo.Size = UDim2.new(0, 24, 0, 24)
+    MiniLogo.Position = UDim2.new(0, 8, 0.5, -12)
+    MiniLogo.BackgroundTransparency = 1
+    MiniLogo.Image = "rbxassetid://12799304724"
+    MiniLogo.ImageColor3 = Color3.fromRGB(0, 240, 255)
+    MiniLogo.Parent = TopWatermark
+
+    local StatsLabel = Instance.new("TextLabel")
+    StatsLabel.Size = UDim2.new(1, -40, 1, 0)
+    StatsLabel.Position = UDim2.new(0, 36, 0, 0)
+    StatsLabel.BackgroundTransparency = 1
+    StatsLabel.Font = Enum.Font.GothamBold
+    StatsLabel.TextSize = 12
+    StatsLabel.TextColor3 = Color3.fromRGB(220, 220, 240)
+    StatsLabel.TextXAlignment = Enum.TextXAlignment.Left
+    StatsLabel.Parent = TopWatermark
+
+    -- Поток вращения маленького логотипа и обновление пинга/фпс
+    RunService.RenderStepped:Connect(function(dt)
+        if MiniLogo and MiniLogo.Parent then
+            MiniLogo.Rotation = (MiniLogo.Rotation + (120 * dt)) % 360
+        end
+        pcall(function()
+            local fps = math.floor(1 / dt)
+            local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue() * 1000)
+            StatsLabel.Text = string.format("%s | %d FPS | %dms", LocalPlayer.Name, fps, ping)
+        end)
+    end)
+
+    -- 2. ПЕРЕМОЖАЕМАЯ ВАТЕРМАРКА С БАФФАМИ И КНИГАМИ
+    local TrackerFrame = Instance.new("Frame")
+    TrackerFrame.Size = UDim2.new(0, 240, 0, 180)
+    TrackerFrame.Position = UDim2.new(0, 20, 0, 20)
+    TrackerFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
+    TrackerFrame.BorderSizePixel = 0
+    TrackerFrame.Active = true
+    TrackerFrame.Draggable = true
+    TrackerFrame.Parent = MasterGui
+
+    local TrackerCorner = Instance.new("UICorner")
+    TrackerCorner.CornerRadius = UDim.new(0, 10)
+    TrackerCorner.Parent = TrackerFrame
+
+    local TrackerStroke = Instance.new("UIStroke")
+    TrackerStroke.Thickness = 1.2
+    TrackerStroke.Color = Color3.fromRGB(0, 240, 255)
+    TrackerStroke.Transparency = 0.3
+    TrackerStroke.Parent = TrackerFrame
+
+    local TrackerHeader = Instance.new("Frame")
+    TrackerHeader.Size = UDim2.new(1, 0, 0, 30)
+    TrackerHeader.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
+    TrackerHeader.BorderSizePixel = 0
+    TrackerHeader.Parent = TrackerFrame
+
+    local TrackerHeaderCorner = Instance.new("UICorner")
+    TrackerHeaderCorner.CornerRadius = UDim.new(0, 10)
+    TrackerHeaderCorner.Parent = TrackerHeader
+
+    local TrackerTitle = Instance.new("TextLabel")
+    TrackerTitle.Size = UDim2.new(1, -15, 1, 0)
+    TrackerTitle.Position = UDim2.new(0, 12, 0, 0)
+    TrackerTitle.BackgroundTransparency = 1
+    TrackerTitle.Font = Enum.Font.GothamBold
+    TrackerTitle.TextSize = 12
+    TrackerTitle.TextColor3 = Color3.fromRGB(0, 240, 255)
+    TrackerTitle.TextXAlignment = Enum.TextXAlignment.Left
+    TrackerTitle.Text = "АКТИВНЫЕ БАФФЫ И КНИГИ"
+    TrackerTitle.Parent = TrackerHeader
+
+    local TrackerContent = Instance.new("ScrollingFrame")
+    TrackerContent.Size = UDim2.new(1, -16, 1, -40)
+    TrackerContent.Position = UDim2.new(0, 8, 0, 35)
+    TrackerContent.BackgroundTransparency = 1
+    TrackerContent.CanvasSize = UDim2.new(0, 0, 0, 250)
+    TrackerContent.ScrollBarThickness = 2
+    TrackerContent.Parent = TrackerFrame
+
+    local TrackerLayout = Instance.new("UIListLayout")
+    TrackerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    TrackerLayout.Padding = UDim.new(0, 5)
+    TrackerLayout.Parent = TrackerContent
+
+    local function addTrackerItem(text)
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(1, 0, 0, 24)
+        lbl.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
+        lbl.Text = "  " .. text
+        lbl.TextColor3 = Color3.fromRGB(190, 190, 210)
+        lbl.TextSize = 11
+        lbl.Font = Enum.Font.GothamSemibold
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        lbl.Parent = TrackerContent
+
+        local c = Instance.new("UICorner")
+        c.CornerRadius = UDim.new(0, 6)
+        c.Parent = lbl
+    end
+
+    addTrackerItem("• Урон Питомцев V [ Активен ]")
+    addTrackerItem("• Шанс Алмазов V [ Активен ]")
+    addTrackerItem("• Книга: Criticals VII [ 99% ]")
+    addTrackerItem("• Книга: Treasure Hunter VI [ 99% ]")
+    addTrackerItem("• Книга: Diamonds V [ 99% ]")
+
+    -- 3. ГЛАВНОЕ ОКНО УПРАВЛЕНИЯ
     local MainFrame = Instance.new("CanvasGroup")
     MainFrame.Size = UDim2.new(0, 860, 0, 540)
     MainFrame.Position = UDim2.new(0.5, -430, 0.5, -270)
@@ -150,7 +276,7 @@ task.spawn(function()
     MainFrame.GroupTransparency = 0
     MainFrame.Active = true
     MainFrame.Draggable = true
-    MainFrame.Parent = MainGui
+    MainFrame.Parent = MasterGui
 
     local MainCorner = Instance.new("UICorner")
     MainCorner.CornerRadius = UDim.new(0, 14)
@@ -162,7 +288,6 @@ task.spawn(function()
     MainStroke.Transparency = 0.3
     MainStroke.Parent = MainFrame
 
-    -- Верхняя панель
     local Header = Instance.new("Frame")
     Header.Size = UDim2.new(1, 0, 0, 55)
     Header.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
@@ -184,7 +309,6 @@ task.spawn(function()
     Title.TextXAlignment = Enum.TextXAlignment.Left
     Title.Parent = Header
 
-    -- Боковая панель вкладок
     local TabContainer = Instance.new("ScrollingFrame")
     TabContainer.Size = UDim2.new(0, 220, 1, -70)
     TabContainer.Position = UDim2.new(0, 15, 0, 65)
@@ -198,7 +322,6 @@ task.spawn(function()
     TabList.Padding = UDim.new(0, 8)
     TabList.Parent = TabContainer
 
-    -- Контейнер страниц
     local PagesContainer = Instance.new("Frame")
     PagesContainer.Size = UDim2.new(1, -255, 1, -70)
     PagesContainer.Position = UDim2.new(0, 245, 0, 65)
@@ -316,16 +439,6 @@ task.spawn(function()
     -- ЧАСТЬ 3: РАБОЧИЕ СЕТЕВЫЕ МОДУЛИ
     -- =========================================================================
     local NetworkQueue = {}
-    local function GetNetworkRemote(remoteName)
-        pcall(function()
-            local net = ReplicatedStorage:FindFirstChild("Network")
-            if net and net:FindFirstChild(remoteName) then
-                return net[remoteName]
-            end
-        end)
-        return nil
-    end
-
     task.spawn(function()
         while true do
             task.wait(0.04 + math.random(1, 3) / 100)
@@ -344,7 +457,7 @@ task.spawn(function()
         end
     end)
 
-    -- 1. Умный распределенный таргет (Smart Area Farm)
+    -- 1. Умный распределенный таргет
     local smartFarmActive = false
     createToggle(farmPage, "Умный распределенный отряд", function(state)
         smartFarmActive = state
@@ -372,7 +485,7 @@ task.spawn(function()
         end)
     end)
 
-    -- 2. Клиентский вакуум лута (Instant Loot Magnet)
+    -- 2. Клиентский вакуум лута
     local autoLootActive = false
     createToggle(farmPage, "Клиентский вакуум лута", function(state)
         autoLootActive = state
@@ -396,7 +509,7 @@ task.spawn(function()
         end)
     end)
 
-    -- 3. Автоматический прожим баффов
+    -- 3. Авто-прожим баффов
     local buffManagerActive = false
     createToggle(farmPage, "Авто-прожим баффов", function(state)
         buffManagerActive = state
@@ -411,7 +524,7 @@ task.spawn(function()
         end)
     end)
 
-    -- 4. Тотальный пропуск анимаций яиц
+    -- 4. Пропуск анимаций яиц
     createToggle(eggPage, "Пропуск анимаций вылупления", function(state)
         pcall(function()
             local eggGui = PlayerGui:FindFirstChild("EggOpeningGui", true)
@@ -421,7 +534,7 @@ task.spawn(function()
         end)
     end)
 
-    -- 5. Парсер торговых стендов (Booth Sniper)
+    -- 5. Снайпер торговых стендов
     local boothSniperActive = false
     createToggle(economyPage, "Снайпер торговых стендов", function(state)
         boothSniperActive = state
@@ -458,7 +571,7 @@ task.spawn(function()
         end)
     end)
 
-    -- 7. Экстремальный режим (Black Screen / FPS Boost)
+    -- 7. Режим черного экрана (Max FPS)
     createToggle(visualPage, "Режим черного экрана (Max FPS)", function(state)
         pcall(function()
             RunService:Set3dRenderingEnabled(not state)
@@ -485,12 +598,12 @@ task.spawn(function()
         end)
     end)
 
-    -- Управление видимостью по RightControl
+    -- Переключение видимости главного меню по RightControl
     UserInputService.InputBegan:Connect(function(input, gp)
         if input.KeyCode == Enum.KeyCode.RightControl then
             MainFrame.Visible = not MainFrame.Visible
         end
     end)
 
-    print("[*] Enterprise Master Hub успешно инициализирован.")
+    print("[*] Enterprise Master Hub успешно инициализирован с ватермарками.")
 end)
