@@ -7,6 +7,7 @@ local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
+local ContextActionService = game:GetService("ContextActionService")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -18,7 +19,7 @@ pcall(function()
 end)
 
 -- =========================================================================
--- ВАТЕРМАРКА (ВЫНЕСЕНА ОТДЕЛЬНО И ПРИВЯЗАНА К КОРРЕТНОМУ ГУИ)
+-- ВАТЕРМАРКА
 -- =========================================================================
 local WatermarkGui = Instance.new("ScreenGui")
 WatermarkGui.Name = "EnterpriseHub_Watermark"
@@ -507,6 +508,9 @@ task.spawn(function()
         end)
     end)
 
+    -- =========================================================================
+    -- ТЕЛЕПОРТАЦИЯ (МИР 1, МИР 2, МИР 3 С ВЫПАДАЮЩИМ МЕНЮ ПО ПКМ)
+    -- =========================================================================
     local tpCard1 = createCard(tpPage, "Торговая Плаза", "Быстрое перемещение в Trading Plaza")
     local tpBtn1 = Instance.new("TextButton", tpCard1)
     tpBtn1.Size = UDim2.new(0, 100, 0, 32)
@@ -515,6 +519,91 @@ task.spawn(function()
     tpBtn1.Text, tpBtn1.TextColor3, tpBtn1.TextSize, tpBtn1.Font = "Перейти", Color3.fromRGB(255, 255, 255), 12, Enum.Font.GothamBold
     Instance.new("UICorner", tpBtn1).CornerRadius = UDim.new(0, 6)
     tpBtn1.MouseButton1Click:Connect(function() TeleportService:Teleport(8737899170, LocalPlayer) end)
+
+    -- Функция для создания мира с ПКМ-меню локаций
+    local function createWorldCard(worldName, descText, locations)
+        local card = createCard(tpPage, worldName, descText .. " (Нажмите ПКМ для выбора локации)")
+        
+        local indicator = Instance.new("TextLabel", card)
+        indicator.Size = UDim2.new(0, 130, 0, 32)
+        indicator.Position = UDim2.new(1, -145, 0.5, -16)
+        indicator.BackgroundTransparency = 1
+        indicator.Font = Enum.Font.GothamMedium
+        indicator.TextSize = 12
+        indicator.TextColor3 = Color3.fromRGB(150, 150, 165)
+        indicator.Text = "ПКМ: Меню зон"
+
+        -- Контейнер для выпадающего списка
+        local dropdown = Instance.new("Frame", MainGui)
+        dropdown.Size = UDim2.new(0, 180, 0, 200)
+        dropdown.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+        dropdown.BorderSizePixel = 0
+        dropdown.Visible = false
+        dropdown.ZIndex = 1000000
+        Instance.new("UICorner", dropdown).CornerRadius = UDim.new(0, 8)
+
+        local scroll = Instance.new("ScrollingFrame", dropdown)
+        scroll.Size = UDim2.new(1, -4, 1, -4)
+        scroll.Position = UDim2.new(0, 2, 0, 2)
+        scroll.BackgroundTransparency = 1
+        scroll.CanvasSize = UDim2.new(0, 0, 0, #locations * 30)
+        scroll.ScrollBarThickness = 3
+        scroll.ZIndex = 1000001
+
+        local layout = Instance.new("UIListLayout", scroll)
+        layout.SortOrder = Enum.SortOrder.LayoutOrder
+        layout.Padding = UDim.new(0, 2)
+
+        for _, locName in ipairs(locations) do
+            local locBtn = Instance.new("TextButton", scroll)
+            locBtn.Size = UDim2.new(1, 0, 0, 28)
+            locBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+            locBtn.BackgroundTransparency = 1
+            locBtn.Font = Enum.Font.Gotham
+            locBtn.TextSize = 12
+            locBtn.TextColor3 = Color3.fromRGB(200, 200, 215)
+            locBtn.TextXAlignment = Enum.TextXAlignment.Left
+            locBtn.Text = "   " .. locName
+            locBtn.ZIndex = 1000002
+
+            locBtn.MouseButton1Click:Connect(function()
+                dropdown.Visible = false
+                pcall(function()
+                    table.insert(NetQueue, {Name = "Teleports_Teleport", Args = {locName}})
+                end)
+            end)
+        end
+
+        card.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton2 then
+                local mousePos = UserInputService:GetMouseLocation()
+                dropdown.Position = UDim2.new(0, mousePos.X, 0, mousePos.Y)
+                dropdown.Visible = not dropdown.Visible
+            end
+        end)
+        
+        -- Закрывать меню при клике в другое место
+        UserInputService.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dropdown.Visible = false
+            end
+        end)
+    end
+
+    -- Генерация списков локаций для миров
+    local world1Locs = {}
+    for i = 1, 99 do table.insert(world1Locs, "Zone " .. i) end
+    table.insert(world1Locs, "Spawn")
+
+    local world2Locs = {}
+    for i = 100, 199 do table.insert(world2Locs, "Zone " .. i) end
+
+    local world3Locs = {}
+    for i = 200, 250 do table.insert(world3Locs, "Zone " .. i) end
+
+    createWorldCard("Мир 1 (Spawn / Early)", "Первый мир PS99", world1Locs)
+    createWorldCard("Мир 2 (Tech World)", "Второй мир PS99", world2Locs)
+    createWorldCard("Мир 3 (Void World / Самый новый)", "Третий мир PS99 (включая 201+ зоны)", world3Locs)
 
     createToggle(miscPage, "Защита от AFK-кика", function(st)
         task.spawn(function()
