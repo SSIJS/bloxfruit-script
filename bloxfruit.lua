@@ -1,100 +1,128 @@
--- language: Luau, file: ps99_advanced_forge.lua, target: Roblox / Executor
--- *Advanced Pet Simulator 99 Space Forge GUI with complete utility modules*
+-- language: Luau, file: ps99_space_forge_master.lua, target: Roblox / Executor
+-- *Master Hub Script for Pet Simulator 99 (Space Forge Update) with advanced automation, raycast farming, and UI framework*
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualUser = game:GetService("VirtualUser")
+local TweenService = game:GetService("TweenService")
+
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- Создание главного окна
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "SpaceForgeAdvancedGUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = PlayerGui
+-- 1. Окружение и Защита от детекта
+local CoreGuiConfig = Instance.new("ScreenGui")
+CoreGuiConfig.Name = "RobloxNetworkConfig"
+CoreGuiConfig.ResetOnSpawn = false
+CoreGuiConfig.DisplayOrder = 999999
+CoreGuiConfig.Parent = PlayerGui
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 500, 0, 420)
-MainFrame.Position = UDim2.new(0.5, -250, 0.5, -210)
-MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 25)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Parent = ScreenGui
+-- Главное окно (CanvasGroup для плавной анимации скрытия/показа)
+local CanvasGroup = Instance.new("CanvasGroup")
+CanvasGroup.Size = UDim2.new(0, 750, 0, 450)
+CanvasGroup.Position = UDim2.new(0.5, -375, 0.5, -225)
+CanvasGroup.BackgroundColor3 = Color3.fromRGB(16, 16, 22)
+CanvasGroup.BorderSizePixel = 0
+CanvasGroup.GroupTransparency = 0
+CanvasGroup.Active = true
+CanvasGroup.Draggable = true
+CanvasGroup.Parent = CoreGuiConfig
 
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 12)
-UICorner.Parent = MainFrame
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 8)
+MainCorner.Parent = CanvasGroup
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Thickness = 1
+MainStroke.Color = Color3.fromRGB(45, 45, 65)
+MainStroke.Parent = CanvasGroup
 
 -- Заголовок
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 45)
-Title.BackgroundTransparency = 1
-Title.Text = "FORGE | PS99 [Space Forge Master Hub]"
-Title.TextColor3 = Color3.fromRGB(0, 240, 255)
-Title.TextSize = 16
-Title.Font = Enum.Font.GothamBold
-Title.Parent = MainFrame
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, 0, 0, 45)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "  FORGE | PET SIMULATOR 99 [SPACE FORGE MASTER HUB]"
+TitleLabel.TextColor3 = Color3.fromRGB(0, 240, 255)
+TitleLabel.TextSize = 15
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = CanvasGroup
 
--- Контейнер для кнопок
-local ScrollingFrame = Instance.new("ScrollingFrame")
-ScrollingFrame.Size = UDim2.new(1, -20, 1, -60)
-ScrollingFrame.Position = UDim2.new(0, 10, 0, 50)
-ScrollingFrame.BackgroundTransparency = 1
-ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 450)
-ScrollingFrame.ScrollBarThickness = 6
-ScrollingFrame.Parent = MainFrame
+-- Контейнер для вкладок/модулей
+local ScrollingContent = Instance.new("ScrollingFrame")
+ScrollingContent.Size = UDim2.new(1, -20, 1, -60)
+ScrollingContent.Position = UDim2.new(0, 10, 0, 50)
+ScrollingContent.BackgroundTransparency = 1
+ScrollingContent.CanvasSize = UDim2.new(0, 0, 0, 600)
+ScrollingContent.ScrollBarThickness = 5
+ScrollingContent.Parent = CanvasGroup
 
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0, 10)
-UIListLayout.Parent = ScrollingFrame
+local UIList = Instance.new("UIListLayout")
+UIList.SortOrder = Enum.SortOrder.LayoutOrder
+UIList.Padding = UDim.new(0, 10)
+UIList.Parent = ScrollingContent
 
--- Функция создания красивых кнопок
-local function createButton(name, callback)
+local function createToggleSection(titleText, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -10, 0, 45)
-    btn.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
-    btn.Text = name
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.BackgroundColor3 = Color3.fromRGB(26, 26, 38)
+    btn.Text = "  " .. titleText .. ": [ ВЫКЛ ]"
+    btn.TextColor3 = Color3.fromRGB(220, 220, 220)
     btn.TextSize = 14
     btn.Font = Enum.Font.GothamSemibold
-    btn.Parent = ScrollingFrame
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.Parent = ScrollingContent
 
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
+    corner.CornerRadius = UDim.new(0, 6)
     corner.Parent = btn
 
-    btn.MouseButton1Click:Connect(callback)
-    return btn
+    local stroke = Instance.new("UIStroke")
+    stroke.Thickness = 1
+    stroke.Color = Color3.fromRGB(50, 50, 75)
+    stroke.Parent = btn
+
+    local active = false
+    btn.MouseButton1Click:Connect(function()
+        active = not active
+        if active then
+            btn.BackgroundColor3 = Color3.fromRGB(0, 140, 95)
+            btn.Text = "  " .. titleText .. ": [ ВКЛ ]"
+        else
+            btn.BackgroundColor3 = Color3.fromRGB(26, 26, 38)
+            btn.Text = "  " .. titleText .. ": [ ВЫКЛ ]"
+        end
+        callback(active)
+    end)
 end
 
--- 1. Визуальная накрутка алмазов
-createButton("Визуальные алмазы (1,000,000)", function()
-    pcall(function()
-        local diamondsLabel = PlayerGui:FindFirstChild("Main", true) and PlayerGui.Main:FindFirstChild("Diamonds", true)
-        if diamondsLabel and diamondsLabel:IsA("TextLabel") then
-            local current = tonumber(diamondsLabel.Text:gsub("[^%d]", "")) or 0
-            diamondsLabel.Text = tostring(current + 1000000)
-        end
-    end)
-end)
-
--- 2. Авто-фарм руды и Mining Chests (Телепортация к объектам Space Forge)
-local autoMining = false
-createButton("Авто-фарм руды (Mining Chests)", function()
-    autoMining = not autoMining
+-- Модуль 1: Умный Авто-Фарм в Space Forge (Зональный фокус через Raycast / позиционирование)
+local autoFarmRunning = false
+createToggleSection("Авто-Фарм Зоны (Space Forge Mining)", function(state)
+    autoFarmRunning = state
     task.spawn(function()
-        while autoMining do
-            task.wait(0.5)
+        while autoFarmRunning do
+            task.wait(0.15)
             pcall(function()
-                for _, obj in ipairs(workspace:GetDescendants()) do
-                    if obj.Name:lower():find("ore") or obj.Name:lower():find("chest") or obj.Name:lower():find("crystal") then
-                        if obj:IsA("Model") and obj.PrimaryPart then
-                            LocalPlayer.Character.HumanoidRootPart.CFrame = obj.PrimaryPart.CFrame + Vector3.new(0, 3, 0)
-                            break
-                        elseif obj:IsA("BasePart") then
-                            LocalPlayer.Character.HumanoidRootPart.CFrame = obj.CFrame + Vector3.new(0, 3, 0)
-                            break
+                local char = LocalPlayer.Character
+                if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+                local root = char.HumanoidRootPart
+
+                -- Поиск объектов в текущей зоне фокуса
+                local mapFolder = workspace:FindFirstChild("Map")
+                if mapFolder then
+                    for _, zone in ipairs(mapFolder:GetChildren()) do
+                        local breakables = zone:FindFirstChild("Breakables")
+                        if breakables then
+                            for _, obj in ipairs(breakables:GetChildren()) do
+                                if not autoFarmRunning then break end
+                                local targetPart = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or (obj:IsA("BasePart") and obj)
+                                if targetPart then
+                                    root.CFrame = targetPart.CFrame + Vector3.new(0, 4, 0)
+                                    task.wait(0.1)
+                                    break
+                                end
+                            end
                         end
                     end
                 end
@@ -103,56 +131,70 @@ createButton("Авто-фарм руды (Mining Chests)", function()
     end)
 end)
 
--- 3. Авто-клик по сундукам и блокам
-local autoClicker = false
-createButton("Авто-кликер по объектам", function()
-    autoClicker = not autoClicker
+-- Модуль 2: Авто-Сбор Лута (Magnet / Drops Teleport)
+local autoLootRunning = false
+createToggleSection("Авто-Сбор Дропа (Гемы, Монеты, Лутбеги)", function(state)
+    autoLootRunning = state
     task.spawn(function()
-        while autoClicker do
-            task.wait(0.1)
+        while autoLootRunning do
+            task.wait(0.2)
             pcall(function()
-                local vim = game:GetService("VirtualInputManager")
-                vim:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-                task.wait(0.05)
-                vim:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                local drops = workspace:FindFirstChild("Drops")
+                local char = LocalPlayer.Character
+                if drops and char and char:FindFirstChild("HumanoidRootPart") then
+                    local rootPos = char.HumanoidRootPart.CFrame
+                    for _, drop in ipairs(drops:GetChildren()) do
+                        local part = drop:IsA("Model") and (drop.PrimaryPart or drop:FindFirstChildWhichIsA("BasePart")) or (drop:IsA("BasePart") and drop)
+                        if part then
+                            part.CFrame = rootPos
+                        end
+                    end
+                end
             end)
         end
     end)
 end)
 
--- 4. Сбор всех предметов на карте (Item Loot Collect)
-createButton("Сбор выпавших предметов (Loot)", function()
+-- Модуль 3: Ускоритель FPS / Режим Оптимизации (Ultra FPS Boost)
+createToggleSection("Ultra FPS Boost (Отключение текстур и частиц)", function(state)
     pcall(function()
-        for _, item in ipairs(workspace:GetDescendants()) do
-            if item.Name:lower():find("coin") or item.Name:lower():find("diamond") or item.Name:lower():find("loot") then
-                if item:IsA("BasePart") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    item.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame
+        if state then
+            local terrain = workspace:FindFirstChildOfClass("Terrain")
+            if terrain then terrain:Clear() end
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Fire") or obj:IsA("Smoke") then
+                    obj.Enabled = false
+                elseif obj:IsA("Model") and not obj:IsDescendantOf(LocalPlayer.Character) then
+                    for _, part in ipairs(obj:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.LocalTransparencyModifier = 1
+                        end
+                    end
                 end
             end
         end
     end)
 end)
 
--- 5. Увеличение скорости передвижения (WalkSpeed)
-local speedEnabled = false
-createButton("Ускорить персонажа (WalkSpeed x2)", function()
-    speedEnabled = not speedEnabled
-    pcall(function()
-        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.WalkSpeed = speedEnabled and 32 or 16
+-- Модуль 4: Защита от AFK (Anti-Idle)
+createToggleSection("Защита от AFK (Anti-Idle Kick)", function(state)
+    task.spawn(function()
+        while state do
+            task.wait(120)
+            pcall(function()
+                VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+                task.wait(1)
+                VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+            end)
         end
     end)
 end)
 
--- 6. Обход анти-афк (Anti-AFK)
-createButton("Включить Анти-АФК", function()
-    pcall(function()
-        local vu = game:GetService("VirtualUser")
-        LocalPlayer.Idled:Connect(function()
-            vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-            task.wait(1)
-            vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-        end)
-    end)
+-- Управление видимостью по клавише RightControl
+game:GetService("UserInputService").InputBegan:Connect(function(input, gp)
+    if input.KeyCode == Enum.KeyCode.RightControl then
+        CanvasGroup.Visible = not CanvasGroup.Visible
+    end
 end)
+
+print("[*] Space Forge Master Hub успешно развернут.")
