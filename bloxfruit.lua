@@ -7,7 +7,6 @@ local VirtualUser = game:GetService("VirtualUser")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local TeleportService = game:GetService("TeleportService")
-local ContextActionService = game:GetService("ContextActionService")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -19,7 +18,7 @@ pcall(function()
 end)
 
 -- =========================================================================
--- ВАТЕРМАРКА
+-- ВАТЕРМАРКА (ИСПРАВЛЕНА И СТАБИЛЬНАЯ)
 -- =========================================================================
 local WatermarkGui = Instance.new("ScreenGui")
 WatermarkGui.Name = "EnterpriseHub_Watermark"
@@ -121,7 +120,7 @@ task.spawn(function()
     LoaderGui:Destroy()
 
     -- =========================================================================
-    -- ГЛАВНОЕ МЕНЮ
+    -- ГЛАВНОЕ МЕНЮ СО СГЛАЖИВАНИЕМ И АНИМАЦИЯМИ
     -- =========================================================================
     local MainGui = Instance.new("ScreenGui")
     MainGui.Name = "EnterpriseHub_Main"
@@ -136,9 +135,10 @@ task.spawn(function()
     MainCanvas.BorderSizePixel = 0
     MainCanvas.GroupTransparency = 1
     MainCanvas.Parent = MainGui
-    Instance.new("UICorner", MainCanvas).CornerRadius = UDim.new(0, 10)
+    Instance.new("UICorner", MainCanvas).CornerRadius = UDim.new(0, 12)
 
-    TweenService:Create(MainCanvas, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {GroupTransparency = 0}):Play()
+    -- Сглаженное появление главного окна
+    TweenService:Create(MainCanvas, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {GroupTransparency = 0}):Play()
 
     -- Перетаскивание
     local DragFrame = Instance.new("Frame")
@@ -225,8 +225,8 @@ task.spawn(function()
     CloseBtn.Parent = TopControls
 
     CloseBtn.MouseButton1Click:Connect(function()
-        TweenService:Create(MainCanvas, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {GroupTransparency = 1}):Play()
-        task.wait(0.2)
+        TweenService:Create(MainCanvas, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {GroupTransparency = 1}):Play()
+        task.wait(0.25)
         MainGui:Destroy()
         WatermarkGui:Destroy()
     end)
@@ -315,7 +315,7 @@ task.spawn(function()
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, -16, 0, 38)
         btn.Position = UDim2.new(0, 8, 0, 0)
-        btn.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
+        btn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
         btn.BackgroundTransparency = 1
         btn.Text = "   " .. displayName
         btn.TextColor3 = Color3.fromRGB(150, 150, 165)
@@ -327,12 +327,12 @@ task.spawn(function()
         btn.MouseButton1Click:Connect(function()
             for _, b in ipairs(NavList:GetChildren()) do
                 if b:IsA("TextButton") then
-                    TweenService:Create(b, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(16, 16, 20), BackgroundTransparency = 1}):Play()
-                    b.TextColor3 = Color3.fromRGB(150, 150, 165)
+                    TweenService:Create(b, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
+                    TweenService:Create(b, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 165)}):Play()
                 end
             end
-            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(22, 22, 28), BackgroundTransparency = 0}):Play()
-            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
+            TweenService:Create(btn, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
             switchPage(targetPage)
         end)
     end
@@ -395,8 +395,10 @@ task.spawn(function()
         local state = false
         btn.MouseButton1Click:Connect(function()
             state = not state
-            btn.BackgroundColor3 = state and Color3.fromRGB(0, 170, 100) or Color3.fromRGB(30, 30, 40)
-            btn.TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 195)
+            TweenService:Create(btn, TweenInfo.new(0.2), {
+                BackgroundColor3 = state and Color3.fromRGB(0, 170, 100) or Color3.fromRGB(30, 30, 40),
+                TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 195)
+            }):Play()
             btn.Text = state and "ВКЛ" or "ВЫКЛ"
             callback(state)
         end)
@@ -509,7 +511,7 @@ task.spawn(function()
     end)
 
     -- =========================================================================
-    -- ТЕЛЕПОРТАЦИЯ (МИР 1, МИР 2, МИР 3 С ВЫПАДАЮЩИМ МЕНЮ ПО ПКМ)
+    -- ТЕЛЕПОРТАЦИЯ (С РАБОЧИМ НАДЕЖНЫМ МЕТОДОМ ПЕРЕМЕЩЕНИЯ И ПКМ-МЕНЮ ЗОН)
     -- =========================================================================
     local tpCard1 = createCard(tpPage, "Торговая Плаза", "Быстрое перемещение в Trading Plaza")
     local tpBtn1 = Instance.new("TextButton", tpCard1)
@@ -520,7 +522,20 @@ task.spawn(function()
     Instance.new("UICorner", tpBtn1).CornerRadius = UDim.new(0, 6)
     tpBtn1.MouseButton1Click:Connect(function() TeleportService:Teleport(8737899170, LocalPlayer) end)
 
-    -- Функция для создания мира с ПКМ-меню локаций
+    local function teleportToZone(zoneName)
+        pcall(function()
+            local map = workspace:FindFirstChild("Map")
+            if map then
+                local zone = map:FindFirstChild(zoneName, true)
+                local targetPart = zone and (zone:FindFirstChild("Spawn") or zone:FindFirstChildWhichIsA("BasePart"))
+                local char = LocalPlayer.Character
+                if targetPart and char and char:FindFirstChild("HumanoidRootPart") then
+                    char.HumanoidRootPart.CFrame = targetPart.CFrame + Vector3.new(0, 5, 0)
+                end
+            end
+        end)
+    end
+
     local function createWorldCard(worldName, descText, locations)
         local card = createCard(tpPage, worldName, descText .. " (Нажмите ПКМ для выбора локации)")
         
@@ -533,7 +548,6 @@ task.spawn(function()
         indicator.TextColor3 = Color3.fromRGB(150, 150, 165)
         indicator.Text = "ПКМ: Меню зон"
 
-        -- Контейнер для выпадающего списка
         local dropdown = Instance.new("Frame", MainGui)
         dropdown.Size = UDim2.new(0, 180, 0, 200)
         dropdown.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
@@ -548,7 +562,7 @@ task.spawn(function()
         scroll.BackgroundTransparency = 1
         scroll.CanvasSize = UDim2.new(0, 0, 0, #locations * 30)
         scroll.ScrollBarThickness = 3
-        scroll.ZIndex = 1000001
+        scroll.ZIndex =  1000001
 
         local layout = Instance.new("UIListLayout", scroll)
         layout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -568,9 +582,7 @@ task.spawn(function()
 
             locBtn.MouseButton1Click:Connect(function()
                 dropdown.Visible = false
-                pcall(function()
-                    table.insert(NetQueue, {Name = "Teleports_Teleport", Args = {locName}})
-                end)
+                teleportToZone(locName)
             end)
         end
 
@@ -582,7 +594,6 @@ task.spawn(function()
             end
         end)
         
-        -- Закрывать меню при клике в другое место
         UserInputService.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                 dropdown.Visible = false
@@ -590,7 +601,6 @@ task.spawn(function()
         end)
     end
 
-    -- Генерация списков локаций для миров
     local world1Locs = {}
     for i = 1, 99 do table.insert(world1Locs, "Zone " .. i) end
     table.insert(world1Locs, "Spawn")
@@ -601,9 +611,9 @@ task.spawn(function()
     local world3Locs = {}
     for i = 200, 250 do table.insert(world3Locs, "Zone " .. i) end
 
-    createWorldCard("Мир 1 (Spawn / Early)", "Первый мир PS99", world1Locs)
-    createWorldCard("Мир 2 (Tech World)", "Второй мир PS99", world2Locs)
-    createWorldCard("Мир 3 (Void World / Самый новый)", "Третий мир PS99 (включая 201+ зоны)", world3Locs)
+    createWorldCard("Пир (Мир 1)", "Первый мир PS99", world1Locs)
+    createWorldCard("Мир 2", "Второй мир PS99 (Tech)", world2Locs)
+    createWorldCard("Мир 3", "Третий мир PS99 (включая 201+ зоны)", world3Locs)
 
     createToggle(miscPage, "Защита от AFK-кика", function(st)
         task.spawn(function()
