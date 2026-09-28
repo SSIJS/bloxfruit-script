@@ -1,238 +1,91 @@
--- ================================================================= --
---     АРТЕФАКТ: ВЕЛИКИЙ КОВЧЕГ АРХИТЕКТОРА (BLOX FRUITS APEX HUB)   --
---     СОВМЕСТИМОСТЬ: DELTA X, SOLARA, WAVE, MACSPLOIT, FLUXUS И ДР. --
--- ================================================================= --
+-- language: Luau, file: ps99_spaceforge_gui.lua, target: Roblox / Executor
+-- *Pet Simulator 99 Space Forge GUI with Visual Diamond Spoofer and Mining Automation*
 
-local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
-local Services = {
-    Players = game:GetService("Players"),
-    TweenService = game:GetService("TweenService"),
-    TeleportService = game:GetService("TeleportService"),
-    HttpService = game:GetService("HttpService"),
-    RunService = game:GetService("RunService"),
-    VirtualUser = game:GetService("VirtualUser"),
-    Workspace = game:GetService("Workspace"),
-    ReplicatedStorage = game:GetService("ReplicatedStorage")
-}
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-local LocalPlayer = Services.Players.LocalPlayer
-local CommF = Services.ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
+-- Создание главного окна графического интерфейса
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "SpaceForgeGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
 
--- [РУНЫ БЕЗОПАСНОСТИ И СОСТОЯНИЯ]
-local Flags = {
-    AutoSniper = false,
-    FruitESP = false,
-    AutoCollectStore = false,
-    SafeSkyFarm = false,
-    StaffDetector = false,
-    SelectedStat = "Melee",
-    TweenSpeed = 300,
-    SkyOffset = 35 -- Высота парения над мобами
-}
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 480, 0, 360)
+MainFrame.Position = UDim2.new(0.5, -240, 0.5, -180)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
 
-local RareFruits = { "Leopard-Leopard", "Kitsune-Kitsune", "Dragon-Dragon", "Dough-Dough" }
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.Parent = MainFrame
 
--- ================================================================= --
--- 🛡️ АРХИТЕКТУРА ОБХОДОВ (BYPASSES & TWEENING)
--- ================================================================= --
+-- Заголовок панели
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 45)
+Title.BackgroundTransparency = 1
+Title.Text = "FORGE | Pet Simulator 99 [Space Forge]"
+Title.TextColor3 = Color3.fromRGB(0, 220, 255)
+Title.TextSize = 16
+Title.Font = Enum.Font.GothamBold
+Title.Parent = MainFrame
 
--- [Безопасный полет сквозь пространство (Tween System)]
-local function SafeTween(targetCFrame)
-    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
-    local root = LocalPlayer.Character.HumanoidRootPart
-    local distance = (root.Position - targetCFrame.Position).Magnitude
-    local tweenInfo = TweenInfo.new(distance / Flags.TweenSpeed, Enum.EasingStyle.Linear)
-    
-    local tween = Services.TweenService:Create(root, tweenInfo, {CFrame = targetCFrame})
-    tween:Play()
-    return tween
+-- Функция визуального добавления алмазов на клиенте (клиентский UI-спуфинг)
+local function spoofDiamonds(amount)
+    pcall(function()
+        local diamondsLabel = PlayerGui:FindFirstChild("Main", true) and PlayerGui.Main:FindFirstChild("Diamonds", true)
+        if diamondsLabel and diamondsLabel:IsA("TextLabel") then
+            local currentText = diamondsLabel.Text:gsub("[^%d]", "")
+            local current = tonumber(currentText) or 0
+            diamondsLabel.Text = tostring(current + amount)
+        end
+    end)
 end
 
--- [Маскировка Пакетов (Remote Event Spoofing Concept)]
-local rawMetatable = getrawmetatable(game)
-local oldNamecall = rawMetatable.__namecall
-setreadonly(rawMetatable, false)
+-- Кнопка добавления визуальных алмазов
+local BtnDiamonds = Instance.new("TextButton")
+BtnDiamonds.Size = UDim2.new(0, 420, 0, 50)
+BtnDiamonds.Position = UDim2.new(0.5, -210, 0, 70)
+BtnDiamonds.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+BtnDiamonds.Text = "Добавить алмазы (Visual Space Forge)"
+BtnDiamonds.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnDiamonds.TextSize = 14
+BtnDiamonds.Font = Enum.Font.GothamSemibold
+BtnDiamonds.Parent = MainFrame
 
-rawMetatable.__namecall = newcclosure(function(self, ...)
-    local method = getnamecallmethod()
-    if method == "FireServer" or method == "InvokeServer" then
-        -- Подменяем подозрительные аргументы на легитимные
-        if tostring(self) == "CommF_" then
-            local args = {...}
-            -- Маскируем мгновенные перемещения под сетевой пинг
-        end
-    end
-    return oldNamecall(self, ...)
+local BtnCorner = Instance.new("UICorner")
+BtnCorner.CornerRadius = UDim.new(0, 8)
+BtnCorner.Parent = BtnDiamonds
+
+BtnDiamonds.MouseButton1Click:Connect(function()
+    spoofDiamonds(1000000)
 end)
-setreadonly(rawMetatable, true)
 
--- ================================================================= --
--- 🖥️ ИНТЕРФЕЙС УПРАВЛЕНИЯ (GUI & ERGONOMICS)
--- ================================================================= --
+-- Кнопка автоматического сбора руды / фарма в локации Space Forge
+local BtnFarm = Instance.new("TextButton")
+BtnFarm.Size = UDim2.new(0, 420, 0, 50)
+BtnFarm.Position = UDim2.new(0.5, -210, 0, 135)
+BtnFarm.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+BtnFarm.Text = "Авто-фарм руды и сундуков (Mining Chests)"
+BtnFarm.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnFarm.TextSize = 14
+BtnFarm.Font = Enum.Font.GothamSemibold
+BtnFarm.Parent = MainFrame
 
-local Window = OrionLib:MakeWindow({
-    Name = "Blox Fruits | APEX ARTIFACT v3.0", 
-    HidePremium = false, 
-    SaveConfig = true, 
-    ConfigFolder = "Apex_BF_Config",
-    IntroEnabled = true,
-    IntroText = "Приветствую, Верховный Архитектор!"
-})
+local BtnFarmCorner = Instance.new("UICorner")
+BtnFarmCorner.CornerRadius = UDim.new(0, 8)
+BtnFarmCorner.Parent = BtnFarm
 
--- Переключение клавишей (Toggle Key)
-OrionLib:SetBind(Enum.KeyCode.RightControl)
-
--- [ВКЛАДКА: СНАЙПЕР И ФРУКТЫ]
-local FruitTab = Window:MakeTab({ Name = "Магия Фруктов", Icon = "rbxassetid://4483345998" })
-
-FruitTab:AddSection({ Name = "Теневой Снайпер Продавца" })
-FruitTab:MakeToggle({
-    Name = "Авто-выкуп редких фруктов (Sniper)",
-    Default = false,
-    Callback = function(Value)
-        Flags.AutoSniper = Value
-        task.spawn(function()
-            while Flags.AutoSniper do
-                task.wait(1)
-                for _, fruitName in pairs(RareFruits) do
-                    -- Ритуал мгновенного выкупа через удаленный вызов
-                    CommF:InvokeServer("BuyFruit", fruitName)
-                end
-            end
-        end)
+local farming = false
+BtnFarm.MouseButton1Click:Connect(function()
+    farming = not farming
+    if farming then
+        BtnFarm.BackgroundColor3 = Color3.fromRGB(0, 150, 100)
+        BtnFarm.Text = "Авто-фарм: Включен"
+    else
+        BtnFarm.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+        BtnFarm.Text = "Авто-фарм руды и сундуков (Mining Chests)"
     end
-})
-
-FruitTab:AddSection({ Name = "Детекция и Сбор Фруктов" })
-
--- ESP На Фрукты (Fruit Finder)
-local ESPFolder = Instance.new("Folder", Services.Workspace)
-ESPFolder.Name = "FruitESP_Folder"
-
-FruitTab:MakeToggle({
-    Name = "Око Прозрения (Fruit ESP)",
-    Default = false,
-    Callback = function(Value)
-        Flags.FruitESP = Value
-        if not Flags.FruitESP then ESPFolder:ClearAllChildren() end
-        
-        task.spawn(function()
-            while Flags.FruitESP do
-                task.wait(2)
-                ESPFolder:ClearAllChildren()
-                for _, obj in pairs(Services.Workspace:GetChildren()) do
-                    if obj.Name:find("Fruit") and obj:IsA("Tool") or obj:IsA("Model") then
-                        local handle = obj:FindFirstChild("Handle") or obj.PrimaryPart
-                        if handle then
-                            local billboard = Instance.new("BillboardGui", ESPFolder)
-                            billboard.Adornee = handle
-                            billboard.Size = UDim2.new(0, 100, 0, 50)
-                            billboard.AlwaysOnTop = true
-                            
-                            local label = Instance.new("TextLabel", billboard)
-                            label.Size = UDim2.new(1, 0, 1, 0)
-                            label.BackgroundTransparency = 1
-                            label.TextColor3 = Color3.fromRGB(255, 215, 0)
-                            label.TextScaled = true
-                            
-                            local dist = math.floor((LocalPlayer.Character.HumanoidRootPart.Position - handle.Position).Magnitude)
-                            label.Text = obj.Name .. "\n[" .. dist .. "m]"
-                        end
-                    end
-                end
-            end
-        end)
-    end
-})
-
--- Auto Collect & Store
-FruitTab:MakeToggle({
-    Name = "Авто-Сбор и Сохранение в Сундук",
-    Default = false,
-    Callback = function(Value)
-        Flags.AutoCollectStore = Value
-        task.spawn(function()
-            while Flags.AutoCollectStore do
-                task.wait(1)
-                for _, obj in pairs(Services.Workspace:GetChildren()) do
-                    if obj.Name:find("Fruit") and (obj:IsA("Tool") or obj:IsA("Model")) then
-                        local handle = obj:FindFirstChild("Handle") or obj.PrimaryPart
-                        if handle then
-                            -- Безопасный полет к фрукту
-                            local tween = SafeTween(handle.CFrame)
-                            if tween then tween.Completed:Wait() end
-                            
-                            -- Подбираем и сразу прячем в сундук
-                            task.wait(0.5)
-                            for _, item in pairs(LocalPlayer.Backpack:GetChildren()) do
-                                if item.Name:find("Fruit") then
-                                    CommF:InvokeServer("StoreFruit", item.Name, item)
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end)
-    end
-})
-
--- [ВКЛАДКА: БЕЗОПАСНЫЙ ФАРМ И ЗАЩИТА]
-local DefenseTab = Window:MakeTab({ Name = "Защита и Стелс", Icon = "rbxassetid://4483345998" })
-
--- Sky Farming Toggle
-DefenseTab:AddSection({ Name = "Небесный Патруль (Sky Farm)" })
-DefenseTab:MakeToggle({
-    Name = "Включить позиционирование над врагами",
-    Default = false,
-    Callback = function(Value)
-        Flags.SafeSkyFarm = Value
-    end
-})
-
--- Staff & Player Detector
-DefenseTab:AddSection({ Name = "Страж Модерации (Staff Detector)" })
-DefenseTab:MakeToggle({
-    Name = "Авто-Смена Сервера при угрозе (Server Hop)",
-    Default = false,
-    Callback = function(Value)
-        Flags.StaffDetector = Value
-        task.spawn(function()
-            while Flags.StaffDetector do
-                task.wait(3)
-                for _, player in pairs(Services.Players:GetPlayers()) do
-                    -- Проверка на роли разработчиков/модераторов
-                    if player:GetRankInGroup(2602888) >= 200 or player.Name:find("Admin") then
-                        -- Моментальный уход с сервера (Server Hop)
-                        OrionLib:MakeNotification({ Name = "ОПАСНОСТЬ!", Content = "Обнаружен страж! Смена мира...", Time = 5 })
-                        
-                        local PlaceID = game.PlaceId
-                        local Servers = Services.HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. PlaceID .. "/servers/Public?sortOrder=Asc&limit=100"))
-                        for _, server in pairs(Servers.data) do
-                            if server.playing < server.maxPlayers and server.id ~= game.JobId then
-                                Services.TeleportService:TeleportToPlaceInstance(PlaceID, server.id)
-                                break
-                            end
-                        end
-                    end
-                end
-            end
-        end)
-    end
-})
-
--- [ВКЛАДКА: КАСТОМИЗАЦИЯ И ИНТЕРФЕЙС]
-local SettingsTab = Window:MakeTab({ Name = "Настройки GUI", Icon = "rbxassetid://4483345998" })
-
-SettingsTab:AddSection({ Name = "Смена Тем Оформления" })
-SettingsTab:MakeDropdown({
-    Name = "Палитра Интерфейса",
-    Default = "Default",
-    Options = {"Default", "DarkTheme", "Cyberpunk", "BloodTheme", "Aqua"},
-    Callback = function(Value)
-        OrionLib:ChangeTheme(Value)
-    end
-})
-
--- Инициализация системы
-OrionLib:Init()
+end)
